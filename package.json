@@ -1,0 +1,17 @@
+{
+  "name": "webapps",
+  "version": "1.0.0",
+  "description": "web apps for EupneaOS",
+  "main": "./shell.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "author": "darksystem",
+  "license": "GPL-2.0-or-later",
+  "dependencies": {
+    "download": "^8.0.0",
+    "readline-sync": "^1.4.10"
+  }
+}
