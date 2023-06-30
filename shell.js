@@ -20,7 +20,7 @@ var helperFunctions = {
         return args
     },
     processArgs: () => {
-        var args = helperFunctions.parseArguments(['install', 'n', 'name', 'run', 'u', 'url', 'help', 'h', 'remove', 'r', 'i','appDir'])
+        var args = helperFunctions.parseArguments(['install', 'n', 'name', 'run', 'u', 'url', 'help', 'h', 'remove', 'r', 'i','appDir','y'])
         //console.log(args)
         if (args.name == undefined) {
             args.name = args.n
@@ -66,8 +66,11 @@ var helperFunctions = {
             console.log('\x1b[32m', 'Icon Download Completed')
 
         } catch (error) {
-            console.error('\x1b[31m', 'Error Downloading App Icon')
-            console.log(error)
+            console.error('\x1b[31m', 'Error Downloading App Icon, Reverting to default image')
+            await download(`https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8SHtzDF-mwA9HjxJOkxQWfpBTCi5ardngkA&usqp=CAU`, path.join(cwd, '/images/'))
+            fs.renameSync(path.join(cwd, '/images/', 'favicons.png'), path.join(cwd, '/images/', name + '.png'))
+
+            //console.log(error)
         }
     },
     createDesktopFile: (name, exec, image, url, profilePath) => {
@@ -113,7 +116,7 @@ var argsFunctions = {
         }
         var name = args.name
         var url = args.install
-        if (readline.keyInYN(`Are you sure you want to install ${name}?`)) {
+        if (args.hasOwnProperty('y')||readline.keyInYN(`Are you sure you want to install ${name}?`)) {
             let database = JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
             let image = path.join(cwd, '/images/', name + '.png')
             database[name.replaceAll(' ','_')] = { url, image }
@@ -129,6 +132,7 @@ var argsFunctions = {
             await helperFunctions.downloadFavicon(url, name,cwd).then(function () {
                 fs.copyFileSync(image,`/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}/app-icon.png`)
                 exec(`chmod 777 -R /system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}`)
+                console.log(`Installation Complete! To start your app run "webapps run ${name.replaceAll(' ','_')}" in your terminal`)
                 process.exit()
             })
             //process.exit()
@@ -194,6 +198,7 @@ var argsFunctions = {
                     } 
                     
                 fs.unlinkSync(database[args.remove].image)
+                fs.rmSync(`${cwd}/profiles/org.gnome.Epiphany.WebApp-${args.remove}/`,{ recursive: true })
                 fs.unlinkSync(`/usr/share/applications/${args.remove}.desktop`)
                 delete database[args.remove]
                 fs.writeFileSync(path.join(cwd, 'apps.json'), JSON.stringify(database))
@@ -236,8 +241,8 @@ var argsFunctions = {
 
 
         } catch (err) {
-            console.log('\x1b[31m','Error: Invalid Argument')
-            console.error(err)
+            console.log('\x1b[31m','Error: Invalid Argument or Bug')
+            //console.error(err)
             //argsFunctions.help()
             process.exit(1)
         }
