@@ -63,8 +63,8 @@ var helperFunctions = {
             fs.renameSync(path.join(cwd, '/images/', 'favicons.png'), path.join(cwd, '/images/', name + '.png'))
 
 
-            console.log('\x1b[32m', 'Icon Download Completed')
-
+            console.log('\x1b[32m')
+            console.log('Icon Download Completed')
         } catch (error) {
             console.error('\x1b[31m', 'Error Downloading App Icon, Reverting to default image')
             await download(`https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8SHtzDF-mwA9HjxJOkxQWfpBTCi5ardngkA&usqp=CAU`, path.join(cwd, '/images/'))
@@ -78,8 +78,8 @@ var helperFunctions = {
 [Desktop Entry]
 Encoding=UTF-8
 Version=1.0
-Name=${name}
-GenericName=${name}
+Name=${name.replaceAll('_','')}
+GenericName=${name.replaceAll('_','')}
 Exec=${exec}
 Terminal=false
 Icon=${image}
@@ -97,7 +97,7 @@ X-WebApp-Navbar=false
 X-WebApp-PrivateWindow=false
 X-WebApp-Isolated=true
     `
-        fs.writeFileSync(`/usr/share/applications/${name}.desktop`, file)
+        fs.writeFileSync(`/usr/share/applications/${name.replaceAll(' ','_')}.desktop`, file)
         fs.writeFileSync(`${profilePath}/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}.desktop`, file)
     },
 }
@@ -110,13 +110,13 @@ var argsFunctions = {
         if (args.name == undefined) {
             args.name = readline.question('What do you want to name this application:\n')
         }
-        if(args.name.includes('_')){
+        /*if(args.name.includes('_')){
             console.error('\x1b[31m', 'The name of your program must not contain underscores')
             process.exit(1)
-        }
+        }*/
         var name = args.name
         var url = args.install
-        if (args.hasOwnProperty('y')||readline.keyInYN(`Are you sure you want to install ${name}?`)) {
+        if ((args.hasOwnProperty('y')&&args.y=="true")||readline.keyInYN(`Are you sure you want to install ${name}?`)) {
             let database = JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
             let image = path.join(cwd, '/images/', name + '.png')
             database[name.replaceAll(' ','_')] = { url, image }
@@ -242,7 +242,7 @@ var argsFunctions = {
 
         } catch (err) {
             console.log('\x1b[31m','Error: Invalid Argument or Bug')
-            //console.error(err)
+            console.error(err)
             //argsFunctions.help()
             process.exit(1)
         }
