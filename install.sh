@@ -4,7 +4,7 @@ npm install
 echo 'Installing The Packging Module'
 npm install -g pkg
 echo 'Creating Directories. Ignore Errors from mkdir.'
-echo 'mkdir /system /system/webapps&& echo `{}`> /system/webapps/apps.json'| sudo bash
+echo 'mkdir /system /system/webapps; echo `{}`> /system/webapps/apps.json;mkdir /system/webapps/profiles; chmod -R 777 /system/webapps/profiles'| sudo bash
 echo 'Builing Package'
 mkdir ./builds
 pkg ./shell.js

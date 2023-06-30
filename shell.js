@@ -70,21 +70,32 @@ var helperFunctions = {
             console.log(error)
         }
     },
-    createDesktopFile: (name, exec, image) => {
+    createDesktopFile: (name, exec, image, url, profilePath) => {
         var file = `
-    [Desktop Entry]
-    Encoding=UTF-8
-    Version=1.0
-    Name=${name.replaceAll(' ', '_')}
-    GenericName=${name}
-    Exec=${exec}
-    Terminal=false
-    Icon=${image}
-    Type=Application
-    Categories=Application
-    Comment=Native Application for ${name}
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Name=${name}
+GenericName=${name}
+Exec=${exec}
+Terminal=false
+Icon=${image}
+Type=Application
+Categories=GTK;WebApps;
+Comment=Native Application for ${name}
+X-MultipleArgs=false
+MimeType=text/html;text/xml;application/xhtml_xml;
+StartupWMClass=org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}
+StartupNotify=true
+X-WebApp-Browser=Epiphany
+X-WebApp-URL=${url}
+X-WebApp-CustomParameters=
+X-WebApp-Navbar=false
+X-WebApp-PrivateWindow=false
+X-WebApp-Isolated=true
     `
         fs.writeFileSync(`/usr/share/applications/${name}.desktop`, file)
+        fs.writeFileSync(`${profilePath}/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}.desktop`, file)
     },
 }
 var argsFunctions = {
@@ -96,18 +107,28 @@ var argsFunctions = {
         if (args.name == undefined) {
             args.name = readline.question('What do you want to name this application:\n')
         }
-        
+        if(args.name.includes('_')){
+            console.error('\x1b[31m', 'The name of your program must not contain underscores')
+            process.exit(1)
+        }
         var name = args.name
         var url = args.install
         if (readline.keyInYN(`Are you sure you want to install ${name}?`)) {
             let database = JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
-            let image = path.join(cwd, '/images/', name + '.ico')
-            database[name] = { url, image }
+            let image = path.join(cwd, '/images/', name + '.png')
+            database[name.replaceAll(' ','_')] = { url, image }
 
             fs.writeFileSync(path.join(cwd, 'apps.json'), JSON.stringify(database))
-            helperFunctions.createDesktopFile(name, `sh -c 'XAPP_FORCE_GTKWINDOW_ICON="${image}" && chromium-browser  --new-window --app=${url}'`, image)
-
-            await helperFunctions.downloadFavicon(url + '/favicon.ico', name,cwd).then(function () {
+            
+            if (!fs.existsSync(`/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}`)){
+                fs.mkdirSync(`/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}`);
+            }
+            helperFunctions.createDesktopFile(name.replaceAll('_',' '), `webapps run ${name.replaceAll(' ','_')}`, image, url, `/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}`)
+           
+            fs.writeFileSync(`/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}/.app`,'')
+            await helperFunctions.downloadFavicon(url, name,cwd).then(function () {
+                fs.copyFileSync(image,`/system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}/app-icon.png`)
+                exec(`chmod 777 -R /system/webapps/profiles/org.gnome.Epiphany.WebApp-${name.replaceAll(' ','_')}`)
                 process.exit()
             })
             //process.exit()
@@ -116,7 +137,9 @@ var argsFunctions = {
     run: (args,cwd) => {
         //Run an app
         var database = JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
-        exec(`chromium-browser  --new-window --app=${database[args.run].url}`)
+        var exec_string = `sh -c 'XAPP_FORCE_GTKWINDOW_ICON="${database[args.run].image}"; epiphany --application-mode --profile="/system/webapps/profiles/org.gnome.Epiphany.WebApp-${args.run.replaceAll(' ','_')}" "${database[args.run].url}"'`
+        //console.log(exec_string)
+        exec(exec_string)
     },
     help: () => {
         if (process.argv[0] == 'sudo') {
@@ -144,7 +167,7 @@ var argsFunctions = {
         ${name} remove google
         ${name} help    
         * states that that option is manditory     
-        
+        If you have an app that has spaces in its name, to run it you must replace those with underscores
         webapps@1.0.0 ${__dirname}      
         `)
         process.exit()
