@@ -6,6 +6,7 @@ const os = require('os')
 const { exec } = require('child_process');
 //const { app, BrowserWindow } = require('electron')
 //const nativeImage = require('electron').nativeImage
+const __VERSION ="1.0.0"
 const download = require('download')
 var helperFunctions = {
     parseArguments: (flags) => {
@@ -167,12 +168,13 @@ var argsFunctions = {
         Examples:
         ${name} run foo
         ${name} install https://www.google.com --name google
+        ${name} install https://www.google.com --name google -y true
         ${name} install https://www.google.com 
         ${name} remove google
         ${name} help    
         * states that that option is manditory     
-        If you have an app that has spaces in its name, to run it you must replace those with underscores
-        webapps@1.0.0 ${__dirname}      
+        If you have an app that has spaces in its name, to run it you must replace those with underscores.
+        webapps@${__VERSION} ${__dirname}      
         `)
         process.exit()
     },
@@ -241,8 +243,8 @@ var argsFunctions = {
 
 
         } catch (err) {
-            console.log('\x1b[31m','Error: Invalid Argument or Bug')
-            console.error(err)
+            console.log('\x1b[31m','Error: Invalid Argument')
+            //console.error(err)
             //argsFunctions.help()
             process.exit(1)
         }
