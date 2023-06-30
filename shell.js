@@ -162,7 +162,7 @@ var argsFunctions = {
             remove - remove a site's application
             help - Print this manual 
         Options:
-            install - url*, name
+            install - url*, name, yes/y
             run - name*
             remove - name*
         Examples:
