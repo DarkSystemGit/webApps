@@ -7,6 +7,9 @@ const { exec } = require('child_process');
 //const { app, BrowserWindow } = require('electron')
 //const nativeImage = require('electron').nativeImage
 const __VERSION ="1.0.0"
+const __githubUrl ="github.com/DarkSystemGit/webapps"
+const __author = "DarkSystem"
+const __modifiedBy = "Modified by: "
 const download = require('download')
 var helperFunctions = {
     parseArguments: (flags) => {
@@ -157,14 +160,20 @@ var argsFunctions = {
 
         Usage: ${name} <Action> <Options>
         Actions:
-            install - Install a site as a native application(Must be run as sudo or root.)
+            install - Install a site as a native application (Must be run as sudo or root.)
             run - Run a site that was installed as a native app 
-            remove - remove a site's application
+            remove - Remove a site's application (Must be run as sudo or root.)
             help - Print this manual 
         Options:
-            install - url*, name, yes/y
-            run - name*
-            remove - name*
+            install:
+                url* - url of site to be installed
+                name - name of application to be installed
+                yes - a boolean which if true skips all confirmation prompts. 
+            run:
+                name* - name of application to be ran
+            remove:
+                name* - name of application to be removed
+            help
         Examples:
         ${name} run foo
         ${name} install https://www.google.com --name google
@@ -174,7 +183,10 @@ var argsFunctions = {
         ${name} help    
         * states that that option is manditory     
         If you have an app that has spaces in its name, to run it you must replace those with underscores.
-        webapps@${__VERSION} ${__dirname}      
+        webapps@${__VERSION} ${__dirname}
+        Author: ${__author}
+        ${/*__modifiedBy*/}
+        https://www.${__githubUrl}
         `)
         process.exit()
     },
@@ -227,6 +239,19 @@ var argsFunctions = {
         cwd = args.appDir
     }else{
         cwd = '/system/webapps/'
+    }
+    try{
+        JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
+    }catch{
+        console.log('\x1b[31m')
+        console.log(`Error: Database could not be read properly.
+        This is proabaly caused by a failed installation.
+        Troubleshooting tips:
+        If this is a fresh install, you should run sudo nano ${path.join(cwd, 'apps.json')} in your terminal and write '{}' in the file.
+        If not, run sudo rm ${path.join(cwd, 'apps.json')} && echo "{}" | sudo bash && sudo nano ${path.join(cwd, 'apps.json')} in your terminal
+        If none of this works,open an issue on Github,
+        https://www.${__githubUrl}/issues/new
+        `)
     }
     Object.keys(args).forEach(async (key) => {
         try {
