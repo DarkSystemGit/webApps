@@ -6,7 +6,7 @@ const os = require('os')
 const { exec } = require('child_process');
 //const { app, BrowserWindow } = require('electron')
 //const nativeImage = require('electron').nativeImage
-const __VERSION ="1.0.0"
+const __VERSION ="1.0.1"
 const __githubUrl ="github.com/DarkSystemGit/webapps"
 const __author = "DarkSystem"
 const __modifiedBy = "Modified by: "
@@ -24,7 +24,7 @@ var helperFunctions = {
         return args
     },
     processArgs: () => {
-        var args = helperFunctions.parseArguments(['install', 'n', 'name', 'run', 'u', 'url', 'help', 'h', 'remove', 'r', 'i','appDir','y'])
+        var args = helperFunctions.parseArguments(['install', 'n', 'name', 'run', 'u', 'url', 'help', 'h', 'remove', 'r', 'i','appDir','y','setup'])
         //console.log(args)
         if (args.name == undefined) {
             args.name = args.n
@@ -164,6 +164,7 @@ var argsFunctions = {
             run - Run a site that was installed as a native app 
             remove - Remove a site's application (Must be run as sudo or root.)
             help - Print this manual 
+            setup - Setup this tool
         Options:
             install:
                 url* - url of site to be installed
@@ -174,18 +175,20 @@ var argsFunctions = {
             remove:
                 name* - name of application to be removed
             help
+            setup
         Examples:
         ${name} run foo
         ${name} install https://www.google.com --name google
         ${name} install https://www.google.com --name google -y true
         ${name} install https://www.google.com 
         ${name} remove google
+        ${name} setup
         ${name} help    
-        * states that that option is manditory     
+        * states that that option is mandatory     
         If you have an app that has spaces in its name, to run it you must replace those with underscores.
         webapps@${__VERSION} ${__dirname}
         Author: ${__author}
-        ${/*__modifiedBy*/}
+        ${/*__modifiedBy*/''}
         https://www.${__githubUrl}
         `)
         process.exit()
@@ -219,12 +222,20 @@ var argsFunctions = {
                 console.log('\x1b[32m',`${toUppercase(args.remove)} has been deleted`)
                 process.exit()
                 } catch (error) {
-                    console.log('\x1b[31m', `Error: Couldn't completly remove ${toUppercase(args.remove)}. This is proably due to a failed installation or a invalid parameter.`)
+                    console.log('\x1b[31m', `Error: Couldn't completely remove ${toUppercase(args.remove)}. This is probaly due to a failed installation or a invalid parameter.`)
                     //console.log(error)
                 }
                 
             } else { return }
         } else { console.log('\x1b[31m', `Error: ${toUppercase(args.remove)} doesn't exist.`) }
+    },
+    setup:(args,cwd)=>{
+        if (!(os.userInfo().uid === 0)) {
+            console.error('\x1b[31m', 'Error: This Program Must be Run as Root')
+            process.exit(1)
+        } 
+        var database = JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
+        exec(`echo 'mkdir /system /system/webapps; echo "{}"> /system/webapps/apps.json;mkdir /system/webapps/profiles; chmod -R 777 /system/webapps/profiles'| sudo bash`)
     }
 };
 (async () => {
@@ -243,15 +254,22 @@ var argsFunctions = {
     try{
         JSON.parse(fs.readFileSync(path.join(cwd, 'apps.json')))
     }catch{
+        if (process.argv[0] == 'sudo') {
+            var name = `sudo ${process.argv[1]}`
+        } else if (process.argv[0].includes('node')) {
+            var name = `node ${process.argv[1]}`
+        } else { var name = process.argv[0] }
         console.log('\x1b[31m')
         console.log(`Error: Database could not be read properly.
         This is proabaly caused by a failed installation.
         Troubleshooting tips:
-        If this is a fresh install, you should run sudo nano ${path.join(cwd, 'apps.json')} in your terminal and write '{}' in the file.
+        If this is a fresh install, you should run sudo nano ${path.join(cwd, 'apps.json')} in your terminal and write '{}' in the file. If an error pops up, run sudo ${name} setup
         If not, run sudo rm ${path.join(cwd, 'apps.json')} && echo "{}" | sudo bash && sudo nano ${path.join(cwd, 'apps.json')} in your terminal
-        If none of this works,open an issue on Github,
+        If none of this works,
+        open an issue on Github,
         https://www.${__githubUrl}/issues/new
         `)
+        process.exit(1)
     }
     Object.keys(args).forEach(async (key) => {
         try {
@@ -264,6 +282,8 @@ var argsFunctions = {
                 await argsFunctions.run(args,cwd)
             } else if (key.includes('remove')) {
                 await argsFunctions.remove(args,cwd)
+            } else if (key.includes('setup')) {
+                await argsFunctions.setup(args,cwd)
             }
 
 
